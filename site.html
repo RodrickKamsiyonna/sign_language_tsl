@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Audio Stream</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #4cc9f0;
+            --background: #f8f9fa;
+            --text: #333;
+            --light: #f1f3f5;
+            --dark: #343a40;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background);
+            color: var(--text);
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 2rem 0;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-weight: 300;
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        
+        .subtitle {
+            font-weight: 300;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .info-text {
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            outline: none;
+            box-shadow: 0 4px 6px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(67, 97, 238, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(67, 97, 238, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: var(--light);
+            color: var(--dark);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: var(--light);
+            transition: all 0.3s ease;
+        }
+        
+        .status.connected {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+        }
+        
+        .status.disconnected {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #c0392b;
+        }
+        
+        .status.warning {
+            background-color: rgba(243, 156, 18, 0.15);
+            color: #d35400;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+        
+        /* Visualization area */
+        .visualization-container {
+            width: 100%;
+            height: 200px;
+            margin: 2rem 0;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #f5f7fa;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        #waveform {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bar {
+            width: 6px;
+            height: 30px;
+            margin: 0 2px;
+            background-color: var(--primary);
+            border-radius: 3px;
+            transition: height 0.2s ease;
+        }
+        
+        /* Current words display */
+        .words-container {
+            margin-top: 1.5rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        #current-words {
+            font-size: 1.5rem;
+            color: var(--dark);
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: rgba(67, 97, 238, 0.1);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            width: 100%;
+            background-color: var(--light);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .visualization-container {
+                height: 150px;
+            }
+            
+            #current-words {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TTS Audio Stream</h1>
+        <p class="subtitle">Interactive Text-to-Speech Streaming For Sign Language Translation</p>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <p class="info-text">Connect to the WebSocket and then trigger the TTS via a separate tool (like Postman or curl). The audio will play automatically as it streams.</p>
+            
+            <div class="button-group">
+                <button id="connect-button" class="btn">Connect WebSocket</button>
+                <button id="resume-button" class="btn btn-secondary" onclick="resumeAudio()">Resume Audio Context</button>
+            </div>
+            
+            <div id="status" class="status">Status: Not Connected</div>
+        </div>
+        
+        <div class="card">
+            <h2>Audio Visualization</h2>
+            <div class="visualization-container">
+                <div id="waveform"></div>
+            </div>
+            
+            <div class="words-container">
+                <div id="current-words">Waiting for audio...</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2025 TTS Audio Stream | Audio Visualization Demo</p>
+    </footer>
+
+    <script>
+        // WebSocket URL (use wss:// for secure connection)
+        const wsUrl = "wss://rodrick-kamsi-sign-asl.hf.space/ws"; // Endpoint
+        let socket = null;
+
+        // Create an AudioContext for audio playback. Must be created after user interaction sometimes.
+        let audioContext;
+        let audioQueue = [];
+        let isPlaying = false;
+        const statusDiv = document.getElementById('status');
+        const currentWordsDiv = document.getElementById('current-words');
+        const connectButton = document.getElementById('connect-button');
+        const waveformDiv = document.getElementById('waveform');
+        
+        // Create analyzer node for visualization
+        let analyser;
+        let dataArray;
+        let bufferLength;
+        let animationFrame;
+        
+        // Create bars for visualization
+        const createVisualizationBars = (count) => {
+            waveformDiv.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                waveformDiv.appendChild(bar);
+            }
+        };
+        
+        // Initial creation of visualization bars
+        createVisualizationBars(60);
+        const bars = document.querySelectorAll('.bar');
+        
+        // Connect button event listener
+        connectButton.addEventListener('click', connectWebSocket);
+
+        function initializeAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("AudioContext initialized or resumed. State:", audioContext.state);
+                
+                // Create analyzer for visualization
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                analyser.connect(audioContext.destination);
+                
+                // Resume if suspended, happens before user interaction
+                resumeAudio();
+            }
+        }
+
+        function connectWebSocket() {
+            if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+                console.log("WebSocket is already open or connecting.");
+                return;
+            }
+
+            console.log("Attempting to connect to:", wsUrl);
+            statusDiv.textContent = "Status: Connecting...";
+            statusDiv.className = "status warning";
+            connectButton.disabled = true;
+            
+            // Use the native WebSocket API
+            socket = new WebSocket(wsUrl);
+
+            // --- WebSocket Event Handlers ---
+            socket.onopen = (event) => {
+                console.log("WebSocket connection opened:", event);
+                statusDiv.textContent = "Status: Connected. Waiting for audio stream...";
+                statusDiv.className = "status connected";
+                connectButton.textContent = "Connected";
+                // Initialize Audio Context on successful connection or first interaction
+                initializeAudioContext();
+            };
+
+            socket.onmessage = async (event) => {
+                // Initialize Audio Context if it wasn't ready yet
+                initializeAudioContext();
+                if (!audioContext) {
+                    console.error("AudioContext not available.");
+                    statusDiv.textContent = "Status: Error - AudioContext not available.";
+                    statusDiv.className = "status warning";
+                    return;
+                }
+
+                try {
+                    // The server sends JSON: {"chunk": "base64_string"}
+                    const data = JSON.parse(event.data);
+
+                    if (data.error) {
+                        console.error("Received error from server:", data.error);
+                        statusDiv.textContent = `Status: Error - ${data.error}`;
+                        statusDiv.className = "status disconnected";
+                        return;
+                    }
+
+                    if (data.chunk) {
+                        statusDiv.textContent = "Status: Receiving audio chunk...";
+                        statusDiv.className = "status connected";
+                        
+                        // Display current words if available (simulated since the actual data doesn't contain this)
+                        if (data.text) {
+                            currentWordsDiv.textContent = data.text;
+                        } else {
+                            currentWordsDiv.textContent = "Playing audio...";
+                        }
+                        
+                        // Decode the base64-encoded WAV data into a binary ArrayBuffer.
+                        const binaryString = atob(data.chunk);
+                        const len = binaryString.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        const arrayBuffer = bytes.buffer;
+
+                        // Decode the WAV chunk using Web Audio API.
+                        const decodedData = await audioContext.decodeAudioData(arrayBuffer);
+                        audioQueue.push(decodedData);
+                        if (!isPlaying) {
+                            playQueue();
+                            startVisualization();
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error processing received message or decoding audio:", error);
+                    statusDiv.textContent = "Status: Error processing message.";
+                    statusDiv.className = "status warning";
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket Error:", error);
+                statusDiv.textContent = "Status: WebSocket Error (check console).";
+                statusDiv.className = "status disconnected";
+                connectButton.disabled = false;
+                connectButton.textContent = "Reconnect";
+            };
+
+            socket.onclose = (event) => {
+                console.log("WebSocket connection closed:", event.reason, `Code: ${event.code}`);
+                statusDiv.textContent = `Status: Disconnected - ${event.reason || 'Connection closed'}`;
+                statusDiv.className = "status disconnected";
+                isPlaying = false;
+                audioQueue = []; // Clear queue on disconnect
+                socket = null; // Allow reconnection attempt
+                connectButton.disabled = false;
+                connectButton.textContent = "Connect WebSocket";
+                stopVisualization();
+                currentWordsDiv.textContent = "Waiting for audio...";
+            };
+        }
+
+        // Function to play queued audio buffers sequentially.
+        function playQueue() {
+            if (audioQueue.length > 0 && audioContext) {
+                isPlaying = true;
+                const buffer = audioQueue.shift();
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                
+                // Connect to analyzer for visualization
+                source.connect(analyser);
+                
+                source.onended = () => {
+                    if (audioQueue.length > 0) {
+                        playQueue(); // Continue with next buffer
+                    } else {
+                        isPlaying = false;
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            statusDiv.textContent = "Status: Connected. Finished playing stream.";
+                            statusDiv.className = "status connected";
+                            currentWordsDiv.textContent = "Finished playing audio.";
+                            stopVisualization();
+                        }
+                    }
+                };
+                source.start();
+            } else {
+                isPlaying = false;
+            }
+        }
+
+        // Resume AudioContext if suspended (required in some browsers due to autoplay policies).
+        function resumeAudio() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log("AudioContext resumed successfully.");
+                    statusDiv.textContent = "Status: AudioContext Resumed.";
+                    statusDiv.className = "status connected";
+                }).catch(e => console.error("Error resuming AudioContext:", e));
+            } else if (!audioContext) {
+                console.log("AudioContext not yet initialized. Click Connect first or trigger interaction.");
+                statusDiv.textContent = "Status: Connect first to initialize audio.";
+                statusDiv.className = "status warning";
+            } else {
+                console.log("AudioContext is already running.");
+                statusDiv.textContent = "Status: AudioContext already running.";
+                statusDiv.className = "status connected";
+            }
+        }
+        
+        // Visualization functions
+        function startVisualization() {
+            if (!analyser) return;
+            
+            // Cancel any existing animation frames
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            
+            function updateVisualization() {
+                if (!isPlaying) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Only use the first part of the frequency data for better visualization
+                const barCount = bars.length;
+                const step = Math.floor(bufferLength / barCount);
+                
+                for (let i = 0; i < barCount; i++) {
+                    const dataIndex = i * step;
+                    const value = dataIndex < bufferLength ? dataArray[dataIndex] : 0;
+                    const height = Math.max(4, value / 255 * 150); // Scale height between 4px and 150px
+                    bars[i].style.height = `${height}px`;
+                    
+                    // Add color variations
+                    const hue = 220 + (value / 255 * 40); // Blue to purple range
+                    bars[i].style.backgroundColor = `hsl(${hue}, 80%, 60%)`;
+                }
+                
+                animationFrame = requestAnimationFrame(updateVisualization);
+            }
+            
+            updateVisualization();
+        }
+        
+        function stopVisualization() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+            
+            // Reset bars to default state
+            bars.forEach(bar => {
+                bar.style.height = '30px'; 
+                bar.style.backgroundColor = 'var(--primary)';
+            });
+        }
+        
+        // Simulate text for demonstration - would normally come from server
+        const demoTexts = [
+            "Hello there! How can I help you today?",
+            "This is a demonstration of audio visualization.",
+            "The bars react to the audio amplitude.",
+            "Thanks for checking out this demo!"
+        ];
+        
+        let textIndex = 0;
+        
+        // For demonstration purposes only - simulates changing text
+        function simulateTextChange() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) return;
+            
+            setTimeout(() => {
+                if (isPlaying) {
+                    currentWordsDiv.textContent = demoTexts[textIndex % demoTexts.length];
+                    textIndex++;
+                    simulateTextChange();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
